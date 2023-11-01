@@ -1,26 +1,33 @@
-From d3e6d7b6c5d5da175f03cf350cd5c67e206e6d3a Mon Sep 17 00:00:00 2001
-From: kaka <kaka@dmz103>
-Date: Sat, 15 Jul 2023 08:49:18 +0800
-Subject: [PATCH 4/4] Set the cookie first
+From 23b683254fcf457c917680aa997ee3dbdb098a42 Mon Sep 17 00:00:00 2001
+From: rix <rix@rix>
+Date: Wed, 1 Nov 2023 18:36:22 +0100
+Subject: [PATCH] login_only patch
 
 ---
- src/invidious/routes/before_all.cr | 36 +++++++++++++++---------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ src/invidious/config.cr            |  1 +
+ src/invidious/routes/before_all.cr | 30 ++++++++++++++++++------------
+ 2 files changed, 19 insertions(+), 12 deletions(-)
 
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index 429d9246..00b49c81 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -84,6 +84,7 @@ class Config
+ 
+   # Used to tell Invidious it is behind a proxy, so links to resources should be https://
+   property https_only : Bool?
++  property login_only : Bool?
+   # HMAC signing key for CSRF tokens and verifying pubsub subscriptions
+   property hmac_key : String = ""
+   # Domain to be used for links to resources on the site where an absolute URL is required
 diff --git a/src/invidious/routes/before_all.cr b/src/invidious/routes/before_all.cr
-index 495ec57be..2685d7b1a 100644
+index 396840a4..2685d7b1 100644
 --- a/src/invidious/routes/before_all.cr
 +++ b/src/invidious/routes/before_all.cr
-@@ -61,24 +61,6 @@ module Invidious::Routes::BeforeAll
+@@ -61,18 +61,6 @@ module Invidious::Routes::BeforeAll
        env.response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
      end
  
--    unregistered_path_whitelist = {"/", "/login", "/licenses", "/privacy"}
--    if CONFIG.login_only && !env.get?("user") && !unregistered_path_whitelist.includes?(env.request.path)
--      env.response.headers["Location"] = "/login"
--      haltf env, status_code: 302
--    end
--
 -    return if {
 -                "/sb/",
 -                "/vi/",
@@ -36,7 +43,7 @@ index 495ec57be..2685d7b1a 100644
      if env.request.cookies.has_key? "SID"
        sid = env.request.cookies["SID"].value
  
-@@ -106,6 +88,24 @@ module Invidious::Routes::BeforeAll
+@@ -100,6 +88,24 @@ module Invidious::Routes::BeforeAll
        end
      end
  
@@ -61,4 +68,5 @@ index 495ec57be..2685d7b1a 100644
      dark_mode = convert_theme(env.params.query["dark_mode"]?) || preferences.dark_mode.to_s
      thin_mode = env.params.query["thin_mode"]? || preferences.thin_mode.to_s
      thin_mode = thin_mode == "true"
-
+-- 
+2.39.3
