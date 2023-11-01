@@ -39,7 +39,6 @@ jobs:
         git config --global user.email "you@example.com"
         git config --global user.name "Your Name"
         git am ../patches/*.patch
-        sed -i 's/https:\/\/invidious.io\/donate\//\/donate/g' src/invidious/views/template.ecr
         
     - name: Login to Docker Hub
       uses: docker/login-action@v2
@@ -59,40 +58,9 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: ./
-        file: ./Dockerfile.new
+        file: ./Dockerfile
         build-args: |
             release=1
         platforms: linux/arm64/v8
         push: true
-        tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
-
-    # - name: patch invidious API repo
-    #   run: |
-    #     cd invidious
-    #     git config --global user.email "you@example.com"
-    #     git config --global user.name "Your Name"
-    #     git am ../patches-api/*.patch
-
-    # - name: Build and push alpine docker image with API only
-    #   id: docker_build_new_api
-    #   uses: docker/build-push-action@v3
-    #   with:
-    #     context: ./
-    #     file: ./Dockerfile.new
-    #     build-args: |
-    #         release=1
-    #         add_build_args=-Dapi_only
-    #     platforms: linux/amd64,linux/arm64/v8
-    #     push: true
-    #     tags: unixfox/invidious-custom:api-new-latest, unixfox/invidious-custom:api-new-build-${{ env.commitid }}
-
-    # - name: Build and push official crystal docker image
-    #   id: docker_build
-    #   uses: docker/build-push-action@v3
-    #   with:
-    #     context: ./
-    #     build-args: |
-    #         release=1
-    #     file: ./Dockerfile
-    #     push: true
-    #     tags: unixfox/invidious-custom:latest, unixfox/invidious-custom:build-${{ env.commitid }}
+        tags: rix1337/docker-utube:latest, docker-utube:new-build-${{ env.commitid }}
