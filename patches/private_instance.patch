@@ -1,3 +1,14 @@
+From f56ad19fef034e3b8ee43d198f6cbeacc03bbd98 Mon Sep 17 00:00:00 2001
+From: rix <rix@rix>
+Date: Sun, 3 Dec 2023 20:54:07 +0100
+Subject: [PATCH] support for private instances #4259
+
+---
+ config/config.example.yml          | 20 +++++++++++++--
+ src/invidious/config.cr            |  2 ++
+ src/invidious/routes/before_all.cr | 41 +++++++++++++++++++++---------
+ 3 files changed, 49 insertions(+), 14 deletions(-)
+
 diff --git a/config/config.example.yml b/config/config.example.yml
 index b44fcc0e..39c72785 100644
 --- a/config/config.example.yml
@@ -115,3 +126,6 @@ index 396840a4..8120ae15 100644
  
      dark_mode = convert_theme(env.params.query["dark_mode"]?) || preferences.dark_mode.to_s
      thin_mode = env.params.query["thin_mode"]? || preferences.thin_mode.to_s
+-- 
+2.39.3 (Apple Git-145)
+
