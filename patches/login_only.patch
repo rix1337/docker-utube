@@ -1,27 +1,63 @@
-From 23b683254fcf457c917680aa997ee3dbdb098a42 Mon Sep 17 00:00:00 2001
-From: rix <rix@rix>
-Date: Wed, 1 Nov 2023 18:36:22 +0100
-Subject: [PATCH] login_only patch
-
----
- src/invidious/config.cr            |  1 +
- src/invidious/routes/before_all.cr | 30 ++++++++++++++++++------------
- 2 files changed, 19 insertions(+), 12 deletions(-)
-
+diff --git a/config/config.example.yml b/config/config.example.yml
+index b44fcc0e..39c72785 100644
+--- a/config/config.example.yml
++++ b/config/config.example.yml
+@@ -236,6 +236,22 @@ https_only: false
+ #  Users and accounts
+ # -----------------------------
+ 
++##
++## Allow/Forbid the usage of the Invidious Instance without an account.
++## Only /login and /privacy are accessible on such instances for unregistered
++## users on the web interface. Moreover, certain API endpoints are accessible,
++## to allow third-party clients to add the instance and login to an existing
++## account.
++##
++## To avoid any data leakage it is recommended to set popular_enabled and
++## statistics_enabled to 'false'. Furthermore, registration_enabled should be
++## set to 'false' to only allow existing users to access the instance.
++##
++## Accepted values: true, false
++## Default: false
++##
++#private_instance: false
++
+ ##
+ ## Allow/Forbid Invidious (local) account creation. Invidious
+ ## accounts allow users to subscribe to channels and to create
+@@ -777,7 +793,7 @@ default_user_preferences:
+   ##
+   ## Default dash video quality.
+   ##
+-  ## Note: this setting only takes effet if the
++  ## Note: this setting only takes effect if the
+   ## 'quality' parameter is set to "dash".
+   ##
+   ## Accepted values:
+@@ -812,7 +828,7 @@ default_user_preferences:
+   ## Default: true
+   ##
+   #vr_mode: true
+-  
++
+   ##
+   ## Save the playback position
+   ## Allow to continue watching at the previous position when
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 429d9246..00b49c81 100644
+index 429d9246..9ae26128 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -84,6 +84,7 @@ class Config
- 
-   # Used to tell Invidious it is behind a proxy, so links to resources should be https://
-   property https_only : Bool?
-+  property login_only : Bool?
-   # HMAC signing key for CSRF tokens and verifying pubsub subscriptions
-   property hmac_key : String = ""
-   # Domain to be used for links to resources on the site where an absolute URL is required
+@@ -92,6 +92,8 @@ class Config
+   property use_pubsub_feeds : Bool | Int32 = false
+   property popular_enabled : Bool = true
+   property captcha_enabled : Bool = true
++  # Only allow usage of the Invidious instance with an existing account
++  property private_instance : Bool = false
+   property login_enabled : Bool = true
+   property registration_enabled : Bool = true
+   property statistics_enabled : Bool = false
 diff --git a/src/invidious/routes/before_all.cr b/src/invidious/routes/before_all.cr
-index 396840a4..2685d7b1 100644
+index 396840a4..8120ae15 100644
 --- a/src/invidious/routes/before_all.cr
 +++ b/src/invidious/routes/before_all.cr
 @@ -61,18 +61,6 @@ module Invidious::Routes::BeforeAll
@@ -43,12 +79,22 @@ index 396840a4..2685d7b1 100644
      if env.request.cookies.has_key? "SID"
        sid = env.request.cookies["SID"].value
  
-@@ -100,6 +88,24 @@ module Invidious::Routes::BeforeAll
+@@ -99,6 +87,35 @@ module Invidious::Routes::BeforeAll
+         env.set "user", user
        end
      end
- 
-+    unregistered_path_whitelist = {"/", "/login", "/licenses", "/privacy"}
-+    if CONFIG.login_only && !env.get?("user") && !unregistered_path_whitelist.includes?(env.request.path)
++    # TODO: popular and trending are whitelisted for clients that require these endpoints to be accessible e.g. Clipious
++    # can be removed as soon as those clients can handle these request on private instances
++    unregistered_path_whitelist = {
++      "/login",
++      "/privacy",
++      "/api/v1/stats",
++      "/feed/webhook/v1:",
++      "/api/v1/videos/dQw4w9WgXcQ",
++      "/api/v1/comments/jNQXAC9IVRw",
++    }
++
++    if CONFIG.private_instance && !env.get?("user") && !unregistered_path_whitelist.any? { |r| env.request.path.starts_with? r }
 +      env.response.headers["Location"] = "/login"
 +      haltf env, status_code: 302
 +    end
@@ -59,14 +105,13 @@ index 396840a4..2685d7b1 100644
 +                "/s_p/",
 +                "/yts/",
 +                "/ggpht/",
++                "/download",
++                "/licenses",
 +                "/api/manifest/",
 +                "/videoplayback",
 +                "/latest_version",
-+                "/download",
++                "/opensearch.xml",
 +              }.any? { |r| env.request.resource.starts_with? r }
-+
+ 
      dark_mode = convert_theme(env.params.query["dark_mode"]?) || preferences.dark_mode.to_s
      thin_mode = env.params.query["thin_mode"]? || preferences.thin_mode.to_s
-     thin_mode = thin_mode == "true"
--- 
-2.39.3
