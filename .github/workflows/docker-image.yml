@@ -19,15 +19,15 @@ jobs:
 
     steps:
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-qemu-action@v3
       if: github.event_name != 'push'
       with:
         platforms: arm64
     - name: Check Out Repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Check Out Repo Invidious
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: "iv-org/invidious"
         ref: 'master'
@@ -52,7 +52,7 @@ jobs:
 
     - name: Build and push alpine docker image
       id: docker_build_new
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         context: ./
         file: ./Dockerfile
